@@ -21,8 +21,7 @@
  5. The dealer must hit until at least 17 is reached.  House may hold before 21.
  6. If neither player reaches 21, the player closest wins without going over 21 or busting."
 
-  stop = NO
-  winner = false
+  winner = []
   house_hand = []
   house_stands = false
   house_bust = false
@@ -48,6 +47,8 @@
 
     player_hand_cards = player_hand.map {|c| c[0]}
     player_hand_suit = player_hand.map  {|s| s[1] }
+    player_has_ace = false
+    house_has_ace = false
 
     # Player summary
     player_total = 0
@@ -55,17 +56,23 @@
     puts "============================"
     player_hand.each do
       |e| puts "#{e[0]} of #{card_suit_names.fetch(e[1])}"
+        if e[0] == "A"
+          player_has_ace = true
+        end
       hash_value = card_values.fetch(e[0])
       player_total += hash_value
     end
+
+    # Ace/Bust adjustment:
+   if player_total >= BUST && player_has_ace
+      player_total -= 11
+    end
+    winner[1] = player_total
     puts "For a total of #{player_total}."
 
-    #if player_total == 21
-    #  puts "You have BLACKJACK!"
-    #  elsif
-    #  player_total > 21
-    #  puts "Bust!  More than 21!"
-    #end
+    if player_stands == true
+      puts "You have chosen to STAND."
+    end
 
     # House summary
     house_total = 0
@@ -74,46 +81,49 @@
     puts "================================="
     house_hand.each do
     |e| puts "#{e[0]} of #{card_suit_names.fetch(e[1])}"
+      if e[0] == "A"
+         house_has_ace = true
+      end
       hash_value = card_values.fetch(e[0])
       house_total += hash_value
     end
-      puts "For a total of #{house_total}."
-      puts ""
 
-    #if house_total == 21
-    #  puts "The House has 21...BLACKJACK!"
-    #elsif
-    #   house_total > 21
-    #  puts "The House went Bust!"
-    #end
+    # Ace/Bust adjustment:
+     if house_total >= BUST && house_has_ace
+      house_total -= 11
+     end
+     winner[2] = house_total
+     puts "For a total of #{house_total}."
+     puts ""
 
-    # Where are we now:
+    # Win checks:
     if  house_total == 21 && player_total == 21
       puts "We have a PUSH, no one wins!"
-      winner = true
-
+      winner[0] = true
     elsif
       house_total >= BUST and player_total >= BUST
       puts "We have a PUSH, no one wins!"
-      winner = true
-
+      winner[0] = true
     elsif
       player_total == BLACKJACK
-      puts "Player wins!"
-      winner = true
+      puts "Player wins! Blackjack!"
+      winner[0] = true
     elsif
       house_total == BLACKJACK
-      puts "The house wins!"
-      winner  = true
+      puts "The house wins! Blackjack!"
+      winner[0] = true
     elsif
-
       player_total >= BUST
       puts "You busted! House wins."
-
+      winner[0] = true
     elsif
       house_total >= BUST
       puts "House went bust! You win."
-     winner = true
+      winner[0] = true
+    elsif
+      player_stands == true && house_total > player_total
+      puts "The house has won with #{house_total}!"
+      winner[0] = true
     end
 
 
@@ -125,10 +135,11 @@
 
   # Initial game prompt and instructions:
   puts "Hello and welcome to ruby Blackjack."
+  puts ""
   puts "Here is a recap of the rules before we begin."
   puts RULES
   puts ""
-  puts "You may enter your player name here, otherwise you will just be known as 'Player' "
+  puts "Press enter to begin."
   player_name = gets.chomp
     if player_name == ""
        player_name == "Player"
@@ -149,17 +160,17 @@
 # Main logic begin:
 
 
-
-while stop != true
+winner[0] = false
+while winner[0] == false
 
 # Display game summary each iteration:
   game_summary(house_hand, player_hand,card_suit_names,card_values,player_stands,house_stands,winner)
 
-if winner == false
+if winner[0]== false
 
    if player_stands == true
    else
-     puts "Would you like to Hit or Stand? ... Enter 'H' or 'S'...you can also Quit with 'Q'."
+     puts "Would you like to Hit(another card) or Stand? .. enter an 'H' to Hit..'S' to stand...you can also Quit with 'Q'."
      user_response = gets.chomp.downcase
 
      if user_response == HIT
@@ -167,18 +178,19 @@ if winner == false
        current_card = deal_a_card(new_deck, current_card)
        player_hand << current_card.pop
      elsif user_response == STAND
-       puts "You have chosen to Stand."
-       player_stands = true
+           puts "You have chosen to Stand."
+           player_stands = true
      elsif user_response == QUIT
-      stop = YES
+      stop = true
      end
 
    end
 
 end
 
+
 # House turn:
-  if winner == false
+  if winner[0] == false  && winner[2] <= 19
     current_card = []
     current_card = deal_a_card(new_deck, current_card)
     house_hand << current_card.pop
